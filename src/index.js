@@ -11,19 +11,37 @@ var promptActive = false;
 var duelActive = false;
 let tackleTimerMillis = Math.floor(Math.random() * timerMax) + timerMin; //The timer can be no longer than 10 seconds
 
-
 const backgroundImage = new Image();
+const darkenedbackgroundImage = new Image();
+
+darkenedbackgroundImage.src = '../images/street-darkened.png';
 backgroundImage.src = '../images/street.png';
 canvas.width = 624;
 canvas.height = 304;
 
 function drawCanvas() {
+
     context.drawImage(backgroundImage, 0, 0);
     // draw characters, timer, starting guide etc 
 }
 
-function animateIntro() {
+//Draws the supplied text in the center of the canvas
+function drawTextOnCanvas(text) {
+    context.font = '42px serif';
+    context.fillText(text, canvas.width/2, canvas.height/2);
+}
 
+function introLoop() {
+    //draw darkened image
+    //overlay instructions
+    context.drawImage(darkenedbackgroundImage, 0, 0);
+    drawTextOnCanvas('waddup');
+    
+    document.addEventListener('keydown', (e) => {
+        if(e.key === " "){
+            gameloop();
+        }
+    })
 }
 
 function gameloop() {
@@ -94,6 +112,8 @@ function drawFakeoutPrompt(){
 }
 
 //END OF FUNCTION DECLARATIONS
-animateIntro();
-gameloop();
+darkenedbackgroundImage.onload = () => {
+    introLoop();
+} 
 listenForKeys();
+
