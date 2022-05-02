@@ -25,18 +25,17 @@ function drawCanvas() {
     // draw characters, timer, starting guide etc 
 }
 
-//Draws the supplied text in the center of the canvas
-function drawTextOnCanvas(text) {
-    context.font = '42px serif';
-    context.fillText(text, canvas.width/2, canvas.height/2);
+function drawIntroText(){
+    context.fillStyle = "white";
+    context.font = "20px Helvetica, Arial, sans-serif";
+    context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
 }
 
 function introLoop() {
     //draw darkened image
     //overlay instructions
     context.drawImage(darkenedbackgroundImage, 0, 0);
-    drawTextOnCanvas('waddup');
-    
+    drawIntroText();
     document.addEventListener('keydown', (e) => {
         if(e.key === " "){
             gameloop();
