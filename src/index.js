@@ -1,16 +1,19 @@
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
-const timerMin = 500;
-const timerMax = 3000;
-const fakeoutProb = 15; //Percent Chance of duel timer being a fakeout timer
+const timerMin = 2000;
+const timerMax = 10000;
+const fakeoutProb = 30; //Percent Chance of duel timer being a fakeout timer
 
 let timeToTackle = false;
-var promptActive = false;
 var duelActive = false;
 var intro = false;
 var duelStartTime = 0;
 var duelResponseTime = 0;
+
+var fakeOut = false;
+var drawFakeOutPrompt = false;
+var realDuel = false;
 
 let tackleTimerMillis = 0; 
 let intermission = false;
@@ -21,11 +24,17 @@ var lastPlayerWon;
 
 const mumenIdle = new Image()
 const mumenIdleFlipped = new Image()
-mumenIdle.src = '../images/characters/mumen_rider/mumen_idle.png'
-mumenIdleFlipped.src = '../images/characters/mumen_rider/mumen_idle_flipped.png'
-const playerOne = new drawable({position: {x : 0, y : 0}, image: mumenIdle, numSprites: 4})
-const playerTwo = new drawable({position: {x : 300, y : 100}, image: mumenIdleFlipped, numSprites: 4})
+const duelPromptImage = new Image()
+const fakeOutPromptImage = new Image()
 
+mumenIdle.src = '../images/characters/mumen_rider/mumen_biking_nogap.png'
+mumenIdleFlipped.src = '../images/characters/mumen_rider/mumen_idle_flipped.png'
+duelPromptImage.src = '../images/exclamation4.png'
+
+const playerOne = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdle, numSprites: 8, canvasPosition: {x: 100, y: 100}})
+const playerTwo = new drawable({cropStart: {x : 300, y : 100}, image: mumenIdleFlipped, numSprites: 4, canvasPosition: {x:300, y:200}})
+const duelPrompt = new drawable({cropStart:{x:0, y:0}, image: duelPromptImage, numSprites: 1, canvasPosition: {x: canvas.width, y: canvas.height / 2}})
+const fakeOutPrompt = new drawable({cropStart:{x: 0, y: 0}, image: fakeOutPromptImage, numSprites: 1, canvasPosition:{x: canvas.width, y: canvas.height / 2}})
 let drawables = [playerOne, playerTwo]
 
 const backgroundImage = new Image();
@@ -42,7 +51,17 @@ function drawCanvas() {
     context.drawImage(backgroundImage, 0, 0);
     drawables.forEach((i) => {
         i.draw()
+        i.nextIdle(60)
     });
+
+    if(timeToTackle){
+        duelPrompt.draw();
+    }
+
+    if(drawFakeOutPrompt){
+        fakeOutPrompt.draw();
+    }
+
     //context.drawImage(mumenIdle, 0, 0)
     // draw characters, timer, starting guide etc 
 }
@@ -53,12 +72,27 @@ function drawIntroText(){
     context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
 }
 
-function drawInterMissionText(){
-    console.log(duelResponseTime);
+function doIntermission(){
     let x = duelResponseTime - duelStartTime;
-    context.fillText("PLAYER " + lastPlayerWon + " WINS!",canvas.width/3.5, canvas.height - 90);
-    context.fillText("JUSTICE REACTION SPEED: " + x + " MS!" , canvas.width/3.5, canvas.height - 50);
+    
+    if(realDuel && timeToTackle){
+        context.fillText("PLAYER " + lastPlayerWon + " WINS!",canvas.width/3.5, canvas.height - 90);
+        context.fillText("JUSTICE REACTION SPEED: " + x + " MS!" , canvas.width/3.5, canvas.height - 50);
+    }else if (fakeOut || !timeToTackle){
+        context.fillText("PLAYER " + lastPlayerWon + " WINS!",canvas.width/3.5, canvas.height - 90);
+        context.fillText("THAT WAS EMBARRASING FOR PLAYER " + ((lastPlayerWon % 2) + 1) , canvas.width/3.5, canvas.height - 50);
+        clearTimeout(duel);
+    }
     context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
+
+    // reset values
+    fakeOut = false;
+    realDuel = false;
+    duelActive = false;
+    timeToTackle = false;
+    drawFakeOutPrompt = false;
+    duelStartTime = 0;
+    duelResponseTime = 0;
 }
 
 function introLoop() {
@@ -70,7 +104,6 @@ function introLoop() {
     document.addEventListener('keydown', (e) => {
         if(e.key === " "){
             if(intro || intermission){
-                console.log("spejs")
                 intro = false;
                 intermission = false;
                 gameloop();
@@ -92,7 +125,16 @@ function gameloop() {
 function intermissionLoop(){
     intermission = true;
     context.drawImage(darkenedbackgroundImage, 0, 0);
-    drawInterMissionText();
+    doIntermission();
+}
+
+function setRandomFakeoutPicture(){
+    let outcome = Math.floor(Math.random() * 100);
+    if(outcome <= 49){
+        fakeOutPromptImage.src = '../images/mumen_face_64px.png'
+    }else{
+        fakeOutPromptImage.src = '../images/fruit_fakeout.png'
+    }
 }
 
 function startNewDuelTimer(){
@@ -104,20 +146,21 @@ function startNewDuelTimer(){
 
     if(outcome <= fakeoutProb){
         duel = setTimeout(drawFakeoutPrompt, tackleTimerMillis);
+        setRandomFakeoutPicture();
+        fakeOut = true;
     }else{
         duel = setTimeout(drawDuelPrompt, tackleTimerMillis);
+        realDuel = true;
     }
 }
 
 function removeFakeoutPromt(){
     //Remove the fakeout prompt
-    promptActive = false;
-    console.clear();
+    drawFakeOutPrompt = false;
     startNewDuelTimer();
 }
 
 function playerWins(player){
-    console.log("Player " + player + " wins!")
     if(player === 1){
         playerOneWins += 1;
         lastPlayerWon = 1;
@@ -128,7 +171,6 @@ function playerWins(player){
 }
 
 function playerLoses(player){
-    console.log("Player " + player + " loses!")
     // Kill the timer
     clearTimeout(duel);
     if(player === 1){
@@ -149,8 +191,6 @@ function resolvePlayerInput(player){
             playerLoses(player)
         }
         
-        duelActive = false;
-        timeToTackle = false;
         intermission = true;
         intermissionLoop();
     }
@@ -173,16 +213,14 @@ function listenForKeys(){
 }
 
 function drawDuelPrompt(){
-    //This is where the duel goes off and the first player to press their key winss
-    console.log("JUSTIZU TAKKURU!");
     duelStartTime = new Date().getTime();
     timeToTackle = true;
 }
 
 function drawFakeoutPrompt(){
     //Fake prompt, removes itself after a set period of time
-    console.log("FAKURU PUROMPTU! ZA PLAYER PRESSING DA BATTON LOSES!");
-    setTimeout(removeFakeoutPromt(), 3000);
+    drawFakeOutPrompt = true;
+    setTimeout(removeFakeoutPromt, 3000);
 }
 
 //END OF FUNCTION DECLARATIONS
@@ -190,4 +228,3 @@ darkenedbackgroundImage.onload = () => {
     introLoop(1);
 } 
 listenForKeys();
-

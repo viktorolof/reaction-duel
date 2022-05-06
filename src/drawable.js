@@ -1,21 +1,36 @@
 class drawable {
-    constructor({position, image, numSprites}) {
-        this.position = position
+    
+    constructor({cropStart, image, numSprites, canvasPosition}) {
+        this.cropStart = cropStart
         this.image = image
         this.numSprites = numSprites
+        this.canvasPosition = canvasPosition;
+        this.frameCounter = 0;
     }
 
     draw() {
         context.drawImage(
             this.image,                             
-            this.position.x,                        // x position of the start of the crop
-            this.position.y,                        // y position of the start of the crop
+            this.cropStart.x,                        // x position of the start of the crop
+            this.cropStart.y,                        // y position of the start of the crop
             this.image.width / this.numSprites,     // x position of the end of the crop
             this.image.height,                      // y position of the end of the crop
-            this.position.x,                        // x position of the image on the canvas
-            this.position.y,                        // y position of the image on the canvas
+            this.canvasPosition.x,                  // x position of the image on the canvas
+            this.canvasPosition.y,                  // y position of the image on the canvas
             this.image.width / this.numSprites,     // The width of the image to be rendered
             this.image.height                       // The height of the image to be rendered
         )
+    }
+
+    nextIdle(frameRate) {
+        // the picture width has to be dividible by the numsprites
+        if(this.frameCounter++ % (frameRate / this.numSprites) === 0){
+            this.cropStart.x += (this.image.width / this.numSprites)
+            this.cropStart.x = this.cropStart.x % this.image.width
+        }else{
+            this.frameCounter += 1;
+        }
+        
+        
     }
 }
