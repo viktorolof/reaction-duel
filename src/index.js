@@ -3,13 +3,16 @@ const context = canvas.getContext('2d');
 
 const timerMin = 500;
 const timerMax = 3000;
-const fakeoutProb = 50; //Percent Chance of duel timer being a fakeout timer
+const fakeoutProb = 15; //Percent Chance of duel timer being a fakeout timer
 
 let timeToTackle = false;
-let gameOver = false;
 var promptActive = false;
 var duelActive = false;
-let tackleTimerMillis = Math.floor(Math.random() * timerMax) + timerMin; //The timer can be no longer than 10 seconds
+let tackleTimerMillis = 0; 
+let intermission = false;
+
+var playerOneWins = 0;
+var playerTwoWins = 0;
 
 const mumenIdle = new Image()
 const mumenIdleFlipped = new Image()
@@ -28,6 +31,8 @@ backgroundImage.src = '../images/street.png';
 canvas.width = 624;
 canvas.height = 304;
 
+var duel;
+
 function drawCanvas() {
     context.drawImage(backgroundImage, 0, 0);
     drawables.forEach((i) => {
@@ -43,51 +48,91 @@ function drawIntroText(){
     context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
 }
 
-function introLoop() {
+
+function introLoop(first) {
     //draw darkened image
     //overlay instructions
     context.drawImage(darkenedbackgroundImage, 0, 0);
     drawIntroText();
-    document.addEventListener('keydown', (e) => {
-        if(e.key === " "){
-            gameloop();
-        }
-    })
+    if(first){
+        document.addEventListener('keydown', (e) => {
+            if(e.key === " "){
+                console.log("spejs")
+                gameloop();
+                document.removeEventListener('keydown', (e));
+            }
+        })
+    }
+    
 }
 
 function gameloop() {
-    drawCanvas();
-    if(!duelActive){
+    if(intermission) {
+        // draw intermission screen ( introloop?)
+        introLoop(0)
+        return;
+    }else if(!duelActive){
         startNewDuelTimer();
     }
+    drawCanvas();
     window.requestAnimationFrame(gameloop);
 }
 
 function startNewDuelTimer(){
     duelActive = true;
     timeToTackle = false;
+    tackleTimerMillis = Math.floor(Math.random() * timerMax) + timerMin;
+
     let outcome = Math.floor(Math.random() * 100);
 
     if(outcome <= fakeoutProb){
-        setTimeout(drawFakeoutPrompt, tackleTimerMillis);
+        duel = setTimeout(drawFakeoutPrompt, tackleTimerMillis);
     }else{
         console.log("Starting new duel")
-        setTimeout(drawDuelPrompt, tackleTimerMillis);
+        duel = setTimeout(drawDuelPrompt, tackleTimerMillis);
     }
 }
 
 function removeFakeoutPromt(){
     //Remove the fakeout prompt
-    
     promptActive = false;
+    console.clear();
+    startNewDuelTimer();
+}
+
+function playerWins(player){
+    console.log("Player " + player + " wins!")
+    if(player === 1){
+        playerOneWins += 1;
+    }else if (player === 2){
+        playerTwoWins += 1;
+    }
+}
+
+function playerLoses(player){
+    console.log("Player " + player + " loses!")
+    // Kill the timer
+    clearTimeout(duel);
+    if(player === 1){
+        playerTwoWins += 1;
+    }else if (player === 2){
+        playerOneWins += 1;
+    }
 }
 
 function resolvePlayerInput(player){
-    console.log("Player " + player + " pressed")
-    if(!gameOver && timeToTackle){
-        console.log("Player " + player + " wins!")
-    }else{
-        console.log("Player " + player + " loses!")
+    if(duelActive){
+        
+        if(timeToTackle){
+            playerWins(player)
+        } else{
+            playerLoses(player)
+        }
+        
+        duelActive = false;
+        timeToTackle = false;
+        intermission = true;
+        // in the future create intermission loop
     }
 }
 
@@ -121,7 +166,7 @@ function drawFakeoutPrompt(){
 
 //END OF FUNCTION DECLARATIONS
 darkenedbackgroundImage.onload = () => {
-    introLoop();
+    introLoop(1);
 } 
 listenForKeys();
 
