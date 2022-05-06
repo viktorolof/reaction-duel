@@ -11,6 +11,15 @@ var promptActive = false;
 var duelActive = false;
 let tackleTimerMillis = Math.floor(Math.random() * timerMax) + timerMin; //The timer can be no longer than 10 seconds
 
+const mumenIdle = new Image()
+const mumenIdleFlipped = new Image()
+mumenIdle.src = '../images/characters/mumen_rider/mumen_idle.png'
+mumenIdleFlipped.src = '../images/characters/mumen_rider/mumen_idle_flipped.png'
+const playerOne = new drawable({position: {x : 0, y : 0}, image: mumenIdle, numSprites: 4})
+const playerTwo = new drawable({position: {x : 300, y : 100}, image: mumenIdleFlipped, numSprites: 4})
+
+let drawables = [playerOne, playerTwo]
+
 const backgroundImage = new Image();
 const darkenedbackgroundImage = new Image();
 
@@ -20,8 +29,11 @@ canvas.width = 624;
 canvas.height = 304;
 
 function drawCanvas() {
-
     context.drawImage(backgroundImage, 0, 0);
+    drawables.forEach((i) => {
+        i.draw()
+    });
+    //context.drawImage(mumenIdle, 0, 0)
     // draw characters, timer, starting guide etc 
 }
 
@@ -45,12 +57,9 @@ function introLoop() {
 
 function gameloop() {
     drawCanvas();
-    // gör nåt mer?
-    
     if(!duelActive){
         startNewDuelTimer();
     }
-
     window.requestAnimationFrame(gameloop);
 }
 
