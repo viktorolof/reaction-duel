@@ -9,6 +9,9 @@ let timeToTackle = false;
 var promptActive = false;
 var duelActive = false;
 var intro = false;
+var duelStartTime = 0;
+var duelResponseTime = 0;
+
 let tackleTimerMillis = 0; 
 let intermission = false;
 
@@ -51,7 +54,10 @@ function drawIntroText(){
 }
 
 function drawInterMissionText(){
-    context.fillText("PLAYER " + lastPlayerWon + " WINS!", canvas.width/3.5, canvas.height - 50);
+    console.log(duelResponseTime);
+    let x = duelResponseTime - duelStartTime;
+    context.fillText("PLAYER " + lastPlayerWon + " WINS!",canvas.width/3.5, canvas.height - 90);
+    context.fillText("JUSTICE REACTION SPEED: " + x + " MS!" , canvas.width/3.5, canvas.height - 50);
     context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
 }
 
@@ -99,7 +105,6 @@ function startNewDuelTimer(){
     if(outcome <= fakeoutProb){
         duel = setTimeout(drawFakeoutPrompt, tackleTimerMillis);
     }else{
-        console.log("Starting new duel")
         duel = setTimeout(drawDuelPrompt, tackleTimerMillis);
     }
 }
@@ -137,7 +142,7 @@ function playerLoses(player){
 
 function resolvePlayerInput(player){
     if(duelActive){
-        
+        duelResponseTime = new Date().getTime();
         if(timeToTackle){
             playerWins(player)
         } else{
@@ -170,6 +175,7 @@ function listenForKeys(){
 function drawDuelPrompt(){
     //This is where the duel goes off and the first player to press their key winss
     console.log("JUSTIZU TAKKURU!");
+    duelStartTime = new Date().getTime();
     timeToTackle = true;
 }
 
