@@ -31,8 +31,8 @@ mumenIdle.src = '../images/characters/mumen_rider/mumen_biking_nogap.png'
 mumenIdleFlipped.src = '../images/characters/mumen_rider/mumen_idle_flipped.png'
 duelPromptImage.src = '../images/exclamation4.png'
 
-const playerOne = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdle, numSprites: 8, canvasPosition: {x: 100, y: 100}})
-const playerTwo = new drawable({cropStart: {x : 300, y : 100}, image: mumenIdleFlipped, numSprites: 4, canvasPosition: {x:300, y:200}})
+const playerOne = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdle, numSprites: 8, canvasPosition: {x: 130, y: 210}})
+const playerTwo = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdleFlipped, numSprites: 4, canvasPosition: {x:470, y:200}})
 const duelPrompt = new drawable({cropStart:{x:0, y:0}, image: duelPromptImage, numSprites: 1, canvasPosition: {x: canvas.width, y: canvas.height / 2}})
 const fakeOutPrompt = new drawable({cropStart:{x: 0, y: 0}, image: fakeOutPromptImage, numSprites: 1, canvasPosition:{x: canvas.width, y: canvas.height / 2}})
 let drawables = [playerOne, playerTwo]
@@ -61,7 +61,6 @@ function drawCanvas() {
     if(drawFakeOutPrompt){
         fakeOutPrompt.draw();
     }
-
     //context.drawImage(mumenIdle, 0, 0)
     // draw characters, timer, starting guide etc 
 }
@@ -112,6 +111,13 @@ function introLoop() {
     })
 }
 
+function drawScore(){
+    context.fillStyle = "white";
+    context.font = "20px Helvetica, Arial, sans-serif";
+    context.fillText("P1: " + playerOneWins, 15, 20);
+    context.fillText("P2: " + playerTwoWins, canvas.width - 60, 20);
+}
+
 function gameloop() {
     if(!intermission){
         if(!duelActive){
@@ -120,6 +126,7 @@ function gameloop() {
         drawCanvas();
         window.requestAnimationFrame(gameloop);
     }
+    drawScore();
 }
 
 function intermissionLoop(){
@@ -157,7 +164,6 @@ function startNewDuelTimer(){
 function removeFakeoutPromt(){
     //Remove the fakeout prompt
     drawFakeOutPrompt = false;
-    startNewDuelTimer();
 }
 
 function playerWins(player){
@@ -225,6 +231,6 @@ function drawFakeoutPrompt(){
 
 //END OF FUNCTION DECLARATIONS
 darkenedbackgroundImage.onload = () => {
-    introLoop(1);
+    introLoop();
 } 
 listenForKeys();
