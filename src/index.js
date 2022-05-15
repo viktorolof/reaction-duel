@@ -2,8 +2,8 @@ const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
 const timerMin = 2000;
-const timerMax = 10000;
-const fakeoutProb = 30; //Percent Chance of duel timer being a fakeout timer
+const timerMax = 2000;
+const fakeoutProb = 50; //Percent Chance of duel timer being a fakeout timer
 
 let timeToTackle = false;
 var duelActive = false;
@@ -27,14 +27,39 @@ const mumenIdleFlipped = new Image()
 const duelPromptImage = new Image()
 const fakeOutPromptImage = new Image()
 
-mumenIdle.src = '../images/characters/mumen_rider/mumen_biking_nogap.png'
+const playerOnePunch = new Image()
+const playerTwoPunch = new Image()
+
+const playerOneLose = new Image();
+const playerTwoLose = new Image();
+
+mumenIdle.src = '../images/characters/mumen_rider/mumen_idle.png'
 mumenIdleFlipped.src = '../images/characters/mumen_rider/mumen_idle_flipped.png'
+playerOnePunch.src = '../images/characters/mumen_rider/mumen_punch.png'
+playerTwoPunch.src = '../images/characters/mumen_rider/mumen_punch_flipped.png' // ändra hur flippade ser ut, nu är det fel
+
+playerOneLose.src = '../images/characters/mumen_rider/mumen_punched.png'
+playerTwoLose.src = '../images/characters/mumen_rider/mumen_punched.png' // ändra till flippade versionen
+
 duelPromptImage.src = '../images/exclamation4.png'
 
-const playerOne = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdle, numSprites: 8, canvasPosition: {x: 130, y: 210}})
-const playerTwo = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdleFlipped, numSprites: 4, canvasPosition: {x:470, y:200}})
-const duelPrompt = new drawable({cropStart:{x:0, y:0}, image: duelPromptImage, numSprites: 1, canvasPosition: {x: canvas.width, y: canvas.height / 2}})
-const fakeOutPrompt = new drawable({cropStart:{x: 0, y: 0}, image: fakeOutPromptImage, numSprites: 1, canvasPosition:{x: canvas.width, y: canvas.height / 2}})
+const playerOneIdle = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdle, numSprites: 4, canvasPosition: {x: 130, y: 120}, scalingConstant: 2})
+const playerTwoIdle = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdleFlipped, numSprites: 4, canvasPosition: {x:410, y:135} , scalingConstant: 2})
+const duelPrompt = new drawable({cropStart:{x:0, y:0}, image: duelPromptImage, numSprites: 1, canvasPosition: {x: canvas.width, y: canvas.height / 2}, scalingConstant: 1})
+const fakeOutPrompt = new drawable({cropStart:{x: 0, y: 0}, image: fakeOutPromptImage, numSprites: 1, canvasPosition:{x: canvas.width, y: canvas.height / 2}, scalingConstant: 1})
+
+const playerOnePunchDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOnePunch, numSprites: 4, canvasPosition: {x:130, y: 120}, scalingConstant: 2})
+const playerTwoPunchDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerTwoPunch, numSprites: 4, canvasPosition: {x:410, y: 135}, scalingConstant: 2})
+
+const playerOneLoseDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOneLose, numSprites: 7, canvasPosition: {x:130, y: 120}, scalingConstant: 2})
+const playerTwoLoseDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOneLose, numSprites: 7, canvasPosition: {x:410, y: 135}, scalingConstant: 2})
+
+
+let frameCounter = 0;
+
+
+const playerOne = new playerSprite({idleDrawable: playerOneIdle, punchDrawable: playerOnePunchDrawable, punchedDrawable: playerOneLoseDrawable});
+const playerTwo= new playerSprite({idleDrawable: playerTwoIdle, punchDrawable: playerTwoPunchDrawable, punchedDrawable: playerTwoLoseDrawable});
 let drawables = [playerOne, playerTwo]
 
 const backgroundImage = new Image();
@@ -47,13 +72,15 @@ canvas.height = 304;
 
 var duel;
 
+function drawEndOfRoundCanvas(){
+    
+}
+
 function drawCanvas() {
     context.drawImage(backgroundImage, 0, 0);
-    drawables.forEach((i) => {
-        i.draw()
-        i.nextIdle(60)
-    });
-
+    playerOne.draw();
+    playerTwo.draw();
+    
     if(timeToTackle){
         duelPrompt.draw();
     }
@@ -61,7 +88,6 @@ function drawCanvas() {
     if(drawFakeOutPrompt){
         fakeOutPrompt.draw();
     }
-    //context.drawImage(mumenIdle, 0, 0)
     // draw characters, timer, starting guide etc 
 }
 
@@ -69,6 +95,17 @@ function drawIntroText(){
     context.fillStyle = "white";
     context.font = "20px Helvetica, Arial, sans-serif";
     context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
+}
+
+function resetValues(){
+    // reset values
+    fakeOut = false;
+    realDuel = false;
+    duelActive = false;
+    timeToTackle = false;
+    drawFakeOutPrompt = false;
+    duelStartTime = 0;
+    duelResponseTime = 0;
 }
 
 function doIntermission(){
@@ -83,15 +120,7 @@ function doIntermission(){
         clearTimeout(duel);
     }
     context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
-
-    // reset values
-    fakeOut = false;
-    realDuel = false;
-    duelActive = false;
-    timeToTackle = false;
-    drawFakeOutPrompt = false;
-    duelStartTime = 0;
-    duelResponseTime = 0;
+    resetValues();
 }
 
 function introLoop() {
@@ -164,13 +193,21 @@ function startNewDuelTimer(){
 function removeFakeoutPromt(){
     //Remove the fakeout prompt
     drawFakeOutPrompt = false;
+    fakeOut = false;
+    resetValues();
 }
 
 function playerWins(player){
+    // ANIMATE player x punches player y
+
     if(player === 1){
+        playerOne.punch();
+        playerTwo.lose();
         playerOneWins += 1;
         lastPlayerWon = 1;
     }else if (player === 2){
+        playerTwo.punch();
+        playerOne.lose();
         playerTwoWins += 1;
         lastPlayerWon = 2;
     }
@@ -178,6 +215,7 @@ function playerWins(player){
 
 function playerLoses(player){
     // Kill the timer
+    // ANIMATE player loses (vad ska det vara)
     clearTimeout(duel);
     if(player === 1){
         playerTwoWins += 1;
