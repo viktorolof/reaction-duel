@@ -2,7 +2,7 @@ const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
 const timerMin = 2000;
-const timerMax = 2000;
+const timerMax = 5000;
 const fakeoutProb = 50; //Percent Chance of duel timer being a fakeout timer
 
 let timeToTackle = false;
@@ -226,6 +226,17 @@ function playerLoses(player){
     }
 }
 
+//Disable player input
+function disableKeys(){
+    window.removeEventListener('keydown', resolvekeyPress); 
+}
+
+function doTimeout(millis){
+    duelActive = false;
+    disableKeys();
+    setTimeout(()=>{listenForKeys()}, millis);
+}
+
 function resolvePlayerInput(player){
     if(duelActive){
         duelResponseTime = new Date().getTime();
@@ -234,26 +245,27 @@ function resolvePlayerInput(player){
         } else{
             playerLoses(player)
         }
-        
-        intermission = true;
-        intermissionLoop();
+        doTimeout(2000);
+    }
+    resetValues();
+}
+
+function resolvekeyPress(event){
+    switch (event.key){
+        case 's':
+            resolvePlayerInput(1);
+            break
+        case 'l':
+            resolvePlayerInput(2);
+            break
+        default:
+            break
     }
 }
 
 function listenForKeys(){
     //Listen for key events
-    window.addEventListener('keydown', (e) => { 
-        switch (e.key){
-            case 's':
-                resolvePlayerInput(1);
-                break
-            case 'l':
-                resolvePlayerInput(2);
-                break
-            default:
-                break
-        }
-    })
+    window.addEventListener('keydown', resolvekeyPress);
 }
 
 function drawDuelPrompt(){
