@@ -1,22 +1,24 @@
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
-const timerMin = 2000;
+const timerMin = 5000;
 const timerMax = 5000;
+const pauseTime = 5000;
 const fakeoutProb = 50; //Percent Chance of duel timer being a fakeout timer
 
 let timeToTackle = false;
-var duelActive = false;
+var activeTimer = false;
 var intro = false;
 var duelStartTime = 0;
 var duelResponseTime = 0;
+var pauseStart = 0;
 
 var fakeOut = false;
 var drawFakeOutPrompt = false;
 var realDuel = false;
+var pauseActive = false;
 
 let tackleTimerMillis = 0; 
-let intermission = false;
 
 var playerOneWins = 0;
 var playerTwoWins = 0;
@@ -54,9 +56,7 @@ const playerTwoPunchDrawable = new drawable({cropStart: {x : 0, y: 0}, image: pl
 const playerOneLoseDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOneLose, numSprites: 7, canvasPosition: {x:130, y: 120}, scalingConstant: 2})
 const playerTwoLoseDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOneLose, numSprites: 7, canvasPosition: {x:410, y: 135}, scalingConstant: 2})
 
-
 let frameCounter = 0;
-
 
 const playerOne = new playerSprite({idleDrawable: playerOneIdle, punchDrawable: playerOnePunchDrawable, punchedDrawable: playerOneLoseDrawable});
 const playerTwo= new playerSprite({idleDrawable: playerTwoIdle, punchDrawable: playerTwoPunchDrawable, punchedDrawable: playerTwoLoseDrawable});
@@ -71,10 +71,6 @@ canvas.width = 624;
 canvas.height = 304;
 
 var duel;
-
-function drawEndOfRoundCanvas(){
-    
-}
 
 function drawCanvas() {
     context.drawImage(backgroundImage, 0, 0);
@@ -101,26 +97,11 @@ function resetValues(){
     // reset values
     fakeOut = false;
     realDuel = false;
-    duelActive = false;
+    activeTimer = false;
     timeToTackle = false;
     drawFakeOutPrompt = false;
     duelStartTime = 0;
     duelResponseTime = 0;
-}
-
-function doIntermission(){
-    let x = duelResponseTime - duelStartTime;
-    
-    if(realDuel && timeToTackle){
-        context.fillText("PLAYER " + lastPlayerWon + " WINS!",canvas.width/3.5, canvas.height - 90);
-        context.fillText("JUSTICE REACTION SPEED: " + x + " MS!" , canvas.width/3.5, canvas.height - 50);
-    }else if (fakeOut || !timeToTackle){
-        context.fillText("PLAYER " + lastPlayerWon + " WINS!",canvas.width/3.5, canvas.height - 90);
-        context.fillText("THAT WAS EMBARRASING FOR PLAYER " + ((lastPlayerWon % 2) + 1) , canvas.width/3.5, canvas.height - 50);
-        clearTimeout(duel);
-    }
-    context.fillText("PRESS [SPACEBAR] TO START", canvas.width/3.5, canvas.height - 10);
-    resetValues();
 }
 
 function introLoop() {
@@ -131,9 +112,8 @@ function introLoop() {
     drawIntroText();
     document.addEventListener('keydown', (e) => {
         if(e.key === " "){
-            if(intro || intermission){
+            if(intro){
                 intro = false;
-                intermission = false;
                 gameloop();
             }
         }
@@ -148,20 +128,24 @@ function drawScore(){
 }
 
 function gameloop() {
-    if(!intermission){
-        if(!duelActive){
+
+    if(!pauseActive){
+        if(!activeTimer){
             startNewDuelTimer();
         }
-        drawCanvas();
-        window.requestAnimationFrame(gameloop);
-    }
-    drawScore();
-}
 
-function intermissionLoop(){
-    intermission = true;
-    context.drawImage(darkenedbackgroundImage, 0, 0);
-    doIntermission();
+        drawCanvas();
+        drawScore();
+    }else{
+        //dax för en ny paus
+        console.log("Pause")
+        if( Date.now() > pauseStart + pauseTime){
+            pauseActive = false;
+            console.log("Go")
+        }
+        resetValues();
+    }
+    window.requestAnimationFrame(gameloop);
 }
 
 function setRandomFakeoutPicture(){
@@ -174,7 +158,7 @@ function setRandomFakeoutPicture(){
 }
 
 function startNewDuelTimer(){
-    duelActive = true;
+    activeTimer = true;
     timeToTackle = false;
     tackleTimerMillis = Math.floor(Math.random() * timerMax) + timerMin;
 
@@ -199,7 +183,7 @@ function removeFakeoutPromt(){
 
 function playerWins(player){
     // ANIMATE player x punches player y
-
+    clearTimeout(duel);
     if(player === 1){
         playerOne.punch();
         playerTwo.lose();
@@ -226,28 +210,19 @@ function playerLoses(player){
     }
 }
 
-//Disable player input
-function disableKeys(){
-    window.removeEventListener('keydown', resolvekeyPress); 
-}
-
-function doTimeout(millis){
-    duelActive = false;
-    disableKeys();
-    setTimeout(()=>{listenForKeys()}, millis);
-}
-
 function resolvePlayerInput(player){
-    if(duelActive){
+    if(activeTimer){
         duelResponseTime = new Date().getTime();
         if(timeToTackle){
             playerWins(player)
         } else{
             playerLoses(player)
         }
-        doTimeout(2000);
+
+        pauseActive = true;
+        pauseStart = Date.now();
+     
     }
-    resetValues();
 }
 
 function resolvekeyPress(event){
