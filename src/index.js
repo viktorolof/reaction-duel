@@ -11,10 +11,12 @@ var activeTimer = false;
 var intro = false;
 var duelStartTime = 0;
 var duelResponseTime = 0;
+var pauseStart = 0;
 
 var fakeOut = false;
 var drawFakeOutPrompt = false;
 var realDuel = false;
+var pauseActive = false;
 
 let tackleTimerMillis = 0; 
 
@@ -126,12 +128,24 @@ function drawScore(){
 }
 
 function gameloop() {
-    if(!activeTimer){
-        startNewDuelTimer();
+
+    if(!pauseActive){
+        if(!activeTimer){
+            startNewDuelTimer();
+        }
+
+        drawCanvas();
+        drawScore();
+    }else{
+        //dax för en ny paus
+        console.log("Pause")
+        if( Date.now() > pauseStart + pauseTime){
+            pauseActive = false;
+            console.log("Go")
+        }
+        resetValues();
     }
-    drawCanvas();
     window.requestAnimationFrame(gameloop);
-    drawScore();
 }
 
 function setRandomFakeoutPicture(){
@@ -196,27 +210,6 @@ function playerLoses(player){
     }
 }
 
-//Disable player input
-function disableKeys(){
-    window.removeEventListener('keydown', resolvekeyPress); 
-}
-
-function doTimeout(){
-    //pauseStart = Date.now();
-    console.log("Pause");
-    //pauseActive = true;
-    //while(Date.now() < (pauseStart + pauseTime)){
-        // rita skit
-        // ha en countdown 
-        //pauseActive = false;
-    //}
-    console.log("Go")
-
-    drawCanvas();
-    window.requestAnimationFrame(doTimeout);
-    resetValues();
-}
-
 function resolvePlayerInput(player){
     if(activeTimer){
         duelResponseTime = new Date().getTime();
@@ -225,10 +218,10 @@ function resolvePlayerInput(player){
         } else{
             playerLoses(player)
         }
-        //break game loop
-        //pause game
-        setTimeout(gameloop, 5000)
-        doTimeout(2000);
+
+        pauseActive = true;
+        pauseStart = Date.now();
+     
     }
 }
 
