@@ -127,12 +127,8 @@ function gameloop() {
 }
 
 function setRandomFakeoutPicture(){
-    let outcome = Math.floor(Math.random() * 100);
-    if(outcome <= 49){
-        fakeOutPromptImage.src = '../images/mumen_face_64px.png'
-    }else{
-        fakeOutPromptImage.src = '../images/fruit_fakeout.png'
-    }
+    let outcome = Math.floor(Math.random(Date.now()) * 100);
+    fakeOutPromptImage.src = images[outcome % (images.length - 1)];
 }
 
 function startNewDuelTimer(){
