@@ -1,12 +1,5 @@
-const canvas = document.querySelector('canvas');
-const context = canvas.getContext('2d');
-
-const timerMin = 5000;
-const timerMax = 15000;
-const pauseTime = 5000;
-const fakeoutProb = 30; //Percent Chance of duel timer being a fakeout timer
-
-let timeToTackle = false;
+/*---------------- Variable declarations ------------------*/
+var timeToTackle = false;
 var activeTimer = false;
 var intro = false;
 var duelStartTime = 0;
@@ -18,56 +11,16 @@ var drawFakeOutPrompt = false;
 var realDuel = false;
 var pauseActive = false;
 
-let tackleTimerMillis = 0; 
+var tackleTimerMillis = 0; 
 
 var playerOneWins = 0;
 var playerTwoWins = 0;
 var lastPlayerWon;
 
-const gokuIdle = new Image()
-const gokuIdleFlipped = new Image()
-const gokuCharge = new Image()
-const gokuChargeFlipped = new Image()
-const gokuKame = new Image()
-const gokuKameFlipped = new Image()
-
-const duelPromptImage = new Image()
-const fakeOutPromptImage = new Image()
-
-gokuIdle.src = '../images/characters/Goku/Goku-idle-3.png'
-gokuIdleFlipped.src = '../images/characters/Goku/Goku-idle-3-flipped.png'
-gokuCharge.src = '../images/characters/Goku/Goku-charge.png'
-gokuKame.src = '../images/characters/Goku/Goku-kamehameha.png'
-gokuChargeFlipped.src = '../images/characters/Goku/Goku-charge-flipped.png'
-gokuKameFlipped.src = '../images/characters/Goku/Goku-kamehameha-flipped.png'
-
-duelPromptImage.src = '../images/exclamation4.png'
-
-const playerOneIdle = new drawable({cropStart: {x : 0, y : 0}, image: gokuIdle, numSprites: 4, canvasPosition: {x: 320, y: 400}, scalingConstant: 1})
-const playerTwoIdle = new drawable({cropStart: {x : 0, y : 0}, image: gokuIdleFlipped, numSprites: 4, canvasPosition: {x:730, y:400} , scalingConstant: 1})
-const playerOneCharge= new drawable({cropStart: {x : 0, y : 0}, image: gokuCharge, numSprites: 1, canvasPosition: {x: 320, y: 400}, scalingConstant: 1})
-const playerOneKame = new drawable({cropStart: {x : 0, y : 0}, image: gokuKame, numSprites: 1, canvasPosition: {x: 320, y: 400}, scalingConstant: 1})
-
-const playerTwoCharge = new drawable({cropStart: {x : 0, y : 0}, image: gokuChargeFlipped, numSprites: 1, canvasPosition: {x:730, y:400} , scalingConstant: 1})
-const playerTwoKame = new drawable({cropStart: {x : 0, y : 0}, image: gokuKameFlipped, numSprites: 1, canvasPosition: {x:400, y:400} , scalingConstant: 1})
-
-const duelPrompt = new drawable({cropStart:{x:0, y:0}, image: duelPromptImage, numSprites: 1, canvasPosition: {x: 535, y: 240}, scalingConstant: 1.5})
-const fakeOutPrompt = new drawable({cropStart:{x: 0, y: 0}, image: fakeOutPromptImage, numSprites: 1, canvasPosition:{x: 535, y: 230}, scalingConstant: 1.5})
-
-const playerOne = new playerSprite({idleDrawable: playerOneIdle, chargingDrawable: playerOneCharge, kameDrawable: playerOneKame});
-const playerTwo= new playerSprite({idleDrawable: playerTwoIdle, chargingDrawable: playerTwoCharge, kameDrawable: playerTwoKame});
-
-
-const backgroundImage = new Image();
-const darkenedbackgroundImage = new Image();
-
-darkenedbackgroundImage.src = '../images/db-background-2.png';
-backgroundImage.src = '../images/db-background.png';
-canvas.width = 1194;
-canvas.height = 740;
-
 var duel;
+/*--------------------------------------------------------*/
 
+/*---------------- Function declarations ------------------*/
 function drawCanvas() {
     context.drawImage(backgroundImage, 0, 0);
     playerOne.draw();
@@ -81,12 +34,10 @@ function drawCanvas() {
         fakeOutPrompt.draw();
     }
    
-    if(pauseActive){
+    if(pauseActive && Date.now() > pauseStart + 1500){
         // if the kamehameha animations are finished draw pausetext
-        if(Date.now() > pauseStart + 1500){
-            let str = calculatePauseText((Date.now() - pauseStart))
-            drawPauseText(str)
-        }
+        let str = calculatePauseText((Date.now() - pauseStart))
+        drawPauseText(str)
     }
 }
 
@@ -274,8 +225,10 @@ function drawFakeoutPrompt(){
     drawFakeOutPrompt = true;
     setTimeout(removeFakeoutPromt, 3000);
 }
+/*------------- End of function declarations -----------------------*/
 
-//END OF FUNCTION DECLARATIONS
+
+// Starts the program when background image is loaded
 darkenedbackgroundImage.onload = () => {
     introLoop();
 } 
