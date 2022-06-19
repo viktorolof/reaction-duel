@@ -128,7 +128,7 @@ function gameloop() {
 
 function setRandomFakeoutPicture(){
     let outcome = Math.floor(Math.random(Date.now()) * 100);
-    fakeOutPromptImage.src = images[outcome % (images.length - 1)];
+    fakeOutPromptImage.src = images[outcome % (images.length)];
 }
 
 function startNewDuelTimer(){

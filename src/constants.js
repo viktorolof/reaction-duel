@@ -10,7 +10,7 @@ canvas.height = 740;
 const timerMin = 4000;
 const timerMax = 12000;
 const pauseTime = 5000;
-const fakeoutProb = 100; //Percent Chance of duel timer being a fakeout timer
+const fakeoutProb = 33; //Percent Chance of duel timer being a fakeout timer
 /*-----------------------------------------*/
 
 
@@ -66,7 +66,10 @@ darkenedbackgroundImage.src = '../images/db-background-2.png';
 backgroundImage.src = '../images/db-background.png';
 
 let images = [  '../images/mumen_face_64px.png', 
-                '../images/fruit_fakeout.png', 
+                '../images/makarider.png', 
                 '../images/pixel_dog.png', 
-                '../images/saw_monkey.png']
+                '../images/saw_monkey.png', 
+                '../images/fruit_fakeout.png',
+                '../images/shenlong.png',
+                '../images/bulma.png']
 /*---------------------------------------------------------*/
