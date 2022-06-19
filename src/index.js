@@ -1,15 +1,8 @@
-const canvas = document.querySelector('canvas');
-const context = canvas.getContext('2d');
-
-const timerMin = 5000;
-const timerMax = 5000;
-const pauseTime = 5000;
-const fakeoutProb = 50; //Percent Chance of duel timer being a fakeout timer
-
-let timeToTackle = false;
+/*---------------- Variable declarations ------------------*/
+var timeToTackle = false;
 var activeTimer = false;
 var intro = false;
-var duelStartTime = 0;
+var promptPopupTime = 0;
 var duelResponseTime = 0;
 var pauseStart = 0;
 
@@ -18,60 +11,17 @@ var drawFakeOutPrompt = false;
 var realDuel = false;
 var pauseActive = false;
 
-let tackleTimerMillis = 0; 
+var tackleTimerMillis = 0; 
 
 var playerOneWins = 0;
 var playerTwoWins = 0;
 var lastPlayerWon;
 
-const mumenIdle = new Image()
-const mumenIdleFlipped = new Image()
-const duelPromptImage = new Image()
-const fakeOutPromptImage = new Image()
+var duel; //reference to duel timer
+var removeFakeoutTimer //reference to timer that removes fakeout prompt
+/*--------------------------------------------------------*/
 
-const playerOnePunch = new Image()
-const playerTwoPunch = new Image()
-
-const playerOneLose = new Image();
-const playerTwoLose = new Image();
-
-mumenIdle.src = '../images/characters/mumen_rider/mumen_idle.png'
-mumenIdleFlipped.src = '../images/characters/mumen_rider/mumen_idle_flipped.png'
-playerOnePunch.src = '../images/characters/mumen_rider/mumen_punch.png'
-playerTwoPunch.src = '../images/characters/mumen_rider/mumen_punch_flipped.png' // ändra hur flippade ser ut, nu är det fel
-
-playerOneLose.src = '../images/characters/mumen_rider/mumen_punched.png'
-playerTwoLose.src = '../images/characters/mumen_rider/mumen_punched.png' // ändra till flippade versionen
-
-duelPromptImage.src = '../images/exclamation4.png'
-
-const playerOneIdle = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdle, numSprites: 4, canvasPosition: {x: 130, y: 120}, scalingConstant: 2})
-const playerTwoIdle = new drawable({cropStart: {x : 0, y : 0}, image: mumenIdleFlipped, numSprites: 4, canvasPosition: {x:410, y:135} , scalingConstant: 2})
-const duelPrompt = new drawable({cropStart:{x:0, y:0}, image: duelPromptImage, numSprites: 1, canvasPosition: {x: canvas.width, y: canvas.height / 2}, scalingConstant: 1})
-const fakeOutPrompt = new drawable({cropStart:{x: 0, y: 0}, image: fakeOutPromptImage, numSprites: 1, canvasPosition:{x: canvas.width, y: canvas.height / 2}, scalingConstant: 1})
-
-const playerOnePunchDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOnePunch, numSprites: 4, canvasPosition: {x:130, y: 120}, scalingConstant: 2})
-const playerTwoPunchDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerTwoPunch, numSprites: 4, canvasPosition: {x:410, y: 135}, scalingConstant: 2})
-
-const playerOneLoseDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOneLose, numSprites: 7, canvasPosition: {x:130, y: 120}, scalingConstant: 2})
-const playerTwoLoseDrawable = new drawable({cropStart: {x : 0, y: 0}, image: playerOneLose, numSprites: 7, canvasPosition: {x:410, y: 135}, scalingConstant: 2})
-
-let frameCounter = 0;
-
-const playerOne = new playerSprite({idleDrawable: playerOneIdle, punchDrawable: playerOnePunchDrawable, punchedDrawable: playerOneLoseDrawable});
-const playerTwo= new playerSprite({idleDrawable: playerTwoIdle, punchDrawable: playerTwoPunchDrawable, punchedDrawable: playerTwoLoseDrawable});
-let drawables = [playerOne, playerTwo]
-
-const backgroundImage = new Image();
-const darkenedbackgroundImage = new Image();
-
-darkenedbackgroundImage.src = '../images/street-darkened.png';
-backgroundImage.src = '../images/street.png';
-canvas.width = 624;
-canvas.height = 304;
-
-var duel;
-
+/*---------------- Function declarations ------------------*/
 function drawCanvas() {
     context.drawImage(backgroundImage, 0, 0);
     playerOne.draw();
@@ -84,7 +34,41 @@ function drawCanvas() {
     if(drawFakeOutPrompt){
         fakeOutPrompt.draw();
     }
-    // draw characters, timer, starting guide etc 
+   
+    if(pauseActive && Date.now() > pauseStart + 1500){
+        // if the kamehameha animations are finished draw pausetext
+        let str = calculatePauseText((Date.now() - pauseStart))
+        drawPauseText(str)
+    }
+}
+
+function calculatePauseText(x) {
+    if(x <= 2500) {
+        return "NEXT ROUND IN 3"
+    } else if(x > 2500 && x <= 3500) {
+        return"NEXT ROUND IN 2"
+    } else if(x > 3500 && x <= 4500) {
+        return "NEXT ROUND IN 1"
+    } else if(x > 4500) {
+        return "GO!"
+    } 
+}
+
+function drawPauseText(str) {
+
+    context.font = "50px Comic Sans MS";
+    context.fillStyle = "red";
+    context.textAlign = "center";
+    context.fillText(str, canvas.width/2, canvas.height/2 - 50);
+
+    //Print response time in case of real duel or silly message if someone lost to fakeout
+    if(realDuel){
+        const reactionTime = duelResponseTime - promptPopupTime;
+        context.fillText("Response time " + reactionTime + "ms", canvas.width/2, (canvas.height/2) - 100);
+    }else{
+        context.fillText("Player " + ((lastPlayerWon % 2) + 1) + " needs to chill", canvas.width/2, (canvas.height/2) - 100);
+    }
+    
 }
 
 function drawIntroText(){
@@ -100,21 +84,19 @@ function resetValues(){
     activeTimer = false;
     timeToTackle = false;
     drawFakeOutPrompt = false;
-    duelStartTime = 0;
+    promptPopupTime = 0;
     duelResponseTime = 0;
 }
 
 function introLoop() {
     intro = true;
-    //draw darkened image
-    //overlay instructions
     context.drawImage(darkenedbackgroundImage, 0, 0);
-    drawIntroText();
     document.addEventListener('keydown', (e) => {
         if(e.key === " "){
             if(intro){
                 intro = false;
-                gameloop();
+                drawPauseText("") // Really weird but if we dont draw this empty pause text the score gets off centered
+                gameloop();         // untilthe first round is over
             }
         }
     })
@@ -122,39 +104,31 @@ function introLoop() {
 
 function drawScore(){
     context.fillStyle = "white";
-    context.font = "20px Helvetica, Arial, sans-serif";
-    context.fillText("P1: " + playerOneWins, 15, 20);
-    context.fillText("P2: " + playerTwoWins, canvas.width - 60, 20);
+    context.font = "90px Comic Sans MS";
+    context.fillText(playerOneWins, canvas.width - 1060 , 355);
+    context.fillText(playerTwoWins, canvas.width - 115, 355);
 }
 
 function gameloop() {
-
     if(!pauseActive){
         if(!activeTimer){
             startNewDuelTimer();
         }
-
-        drawCanvas();
-        drawScore();
     }else{
-        //dax för en ny paus
-        console.log("Pause")
         if( Date.now() > pauseStart + pauseTime){
-            pauseActive = false;
-            console.log("Go")
+            pauseActive = false; 
+            resetValues();
         }
-        resetValues();
+        
     }
+    drawCanvas();
+    drawScore();
     window.requestAnimationFrame(gameloop);
 }
 
 function setRandomFakeoutPicture(){
-    let outcome = Math.floor(Math.random() * 100);
-    if(outcome <= 49){
-        fakeOutPromptImage.src = '../images/mumen_face_64px.png'
-    }else{
-        fakeOutPromptImage.src = '../images/fruit_fakeout.png'
-    }
+    let outcome = Math.floor(Math.random(Date.now()) * 100);
+    fakeOutPromptImage.src = images[outcome % (images.length)];
 }
 
 function startNewDuelTimer(){
@@ -174,7 +148,7 @@ function startNewDuelTimer(){
     }
 }
 
-function removeFakeoutPromt(){
+function removeFakeoutPrompt(){
     //Remove the fakeout prompt
     drawFakeOutPrompt = false;
     fakeOut = false;
@@ -182,46 +156,55 @@ function removeFakeoutPromt(){
 }
 
 function playerWins(player){
-    // ANIMATE player x punches player y
     clearTimeout(duel);
     if(player === 1){
-        playerOne.punch();
-        playerTwo.lose();
+        animateKamehameha(playerOne)
         playerOneWins += 1;
         lastPlayerWon = 1;
     }else if (player === 2){
-        playerTwo.punch();
-        playerOne.lose();
+        animateKamehameha(playerTwo)
         playerTwoWins += 1;
         lastPlayerWon = 2;
     }
 }
 
+function animateKamehameha(player) {
+    player.currentDrawable = 1
+    setTimeout(() => {
+        player.currentDrawable = 2
+    }, 1000)
+    setTimeout(() => {
+        player.currentDrawable = 0
+    }, 2000)
+}
+
 function playerLoses(player){
-    // Kill the timer
-    // ANIMATE player loses (vad ska det vara)
     clearTimeout(duel);
     if(player === 1){
+        animateKamehameha(playerTwo)
         playerTwoWins += 1;
         lastPlayerWon = 2;
     }else if (player === 2){
+        animateKamehameha(playerOne)
         playerOneWins += 1;
         lastPlayerWon = 1;
     }
 }
 
 function resolvePlayerInput(player){
-    if(activeTimer){
+    if(!pauseActive){
         duelResponseTime = new Date().getTime();
         if(timeToTackle){
             playerWins(player)
+            timeToTackle = false; //Force prompt to disapprear to free up screen space for end of round text
         } else{
             playerLoses(player)
+            removeFakeoutPrompt();
+            clearTimeout(removeFakeoutTimer); //Remove fakeout promt to free up screen space;
         }
 
         pauseActive = true;
         pauseStart = Date.now();
-     
     }
 }
 
@@ -244,17 +227,19 @@ function listenForKeys(){
 }
 
 function drawDuelPrompt(){
-    duelStartTime = new Date().getTime();
+    promptPopupTime = new Date().getTime();
     timeToTackle = true;
 }
 
 function drawFakeoutPrompt(){
     //Fake prompt, removes itself after a set period of time
     drawFakeOutPrompt = true;
-    setTimeout(removeFakeoutPromt, 3000);
+    removeFakeoutTimer = setTimeout(removeFakeoutPrompt, 3000);
 }
+/*------------- End of function declarations -----------------------*/
 
-//END OF FUNCTION DECLARATIONS
+
+// Starts the program when background image is loaded
 darkenedbackgroundImage.onload = () => {
     introLoop();
 } 
