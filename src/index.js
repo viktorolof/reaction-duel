@@ -2,9 +2,9 @@ const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
 const timerMin = 5000;
-const timerMax = 5000;
+const timerMax = 15000;
 const pauseTime = 5000;
-const fakeoutProb = 25; //Percent Chance of duel timer being a fakeout timer
+const fakeoutProb = 30; //Percent Chance of duel timer being a fakeout timer
 
 let timeToTackle = false;
 var activeTimer = false;
@@ -41,7 +41,6 @@ gokuKame.src = '../images/characters/Goku/Goku-kamehameha.png'
 gokuChargeFlipped.src = '../images/characters/Goku/Goku-charge-flipped.png'
 gokuKameFlipped.src = '../images/characters/Goku/Goku-kamehameha-flipped.png'
 
-
 duelPromptImage.src = '../images/exclamation4.png'
 
 const playerOneIdle = new drawable({cropStart: {x : 0, y : 0}, image: gokuIdle, numSprites: 4, canvasPosition: {x: 320, y: 400}, scalingConstant: 1})
@@ -54,9 +53,6 @@ const playerTwoKame = new drawable({cropStart: {x : 0, y : 0}, image: gokuKameFl
 
 const duelPrompt = new drawable({cropStart:{x:0, y:0}, image: duelPromptImage, numSprites: 1, canvasPosition: {x: 535, y: 240}, scalingConstant: 1.5})
 const fakeOutPrompt = new drawable({cropStart:{x: 0, y: 0}, image: fakeOutPromptImage, numSprites: 1, canvasPosition:{x: 535, y: 230}, scalingConstant: 1.5})
-
-
-let frameCounter = 0;
 
 const playerOne = new playerSprite({idleDrawable: playerOneIdle, chargingDrawable: playerOneCharge, kameDrawable: playerOneKame});
 const playerTwo= new playerSprite({idleDrawable: playerTwoIdle, chargingDrawable: playerTwoCharge, kameDrawable: playerTwoKame});
@@ -84,7 +80,33 @@ function drawCanvas() {
     if(drawFakeOutPrompt){
         fakeOutPrompt.draw();
     }
-    // draw characters, timer, starting guide etc 
+   
+    if(pauseActive){
+        // if the kamehameha animations are finished draw pausetext
+        if(Date.now() > pauseStart + 1500){
+            let str = calculatePauseText((Date.now() - pauseStart))
+            drawPauseText(str)
+        }
+    }
+}
+
+function calculatePauseText(x) {
+    if(x <= 2500) {
+        return "NEXT ROUND IN 3"
+    } else if(x > 2500 && x <= 3500) {
+        return"NEXT ROUND IN 2"
+    } else if(x > 3500 && x <= 4500) {
+        return "NEXT ROUND IN 1"
+    } else if(x > 4500) {
+        return "GO!"
+    } 
+}
+
+function drawPauseText(str) {
+    context.font = "50px Comic Sans MS";
+    context.fillStyle = "red";
+    context.textAlign = "center";
+    context.fillText(str, canvas.width/2, canvas.height/2 - 50);
 }
 
 function drawIntroText(){
@@ -106,15 +128,13 @@ function resetValues(){
 
 function introLoop() {
     intro = true;
-    //draw darkened image
-    //overlay instructions
     context.drawImage(darkenedbackgroundImage, 0, 0);
-    //drawIntroText();
     document.addEventListener('keydown', (e) => {
         if(e.key === " "){
             if(intro){
                 intro = false;
-                gameloop();
+                drawPauseText("") // Really weird but if we dont draw this empty pause text the score gets off centered
+                gameloop();         // untilthe first round is over
             }
         }
     })
@@ -122,9 +142,9 @@ function introLoop() {
 
 function drawScore(){
     context.fillStyle = "white";
-    context.font = "90px Helvetica, Arial, sans-serif";
-    context.fillText(playerOneWins, 115, 355);
-    context.fillText(playerTwoWins, 1060, 355);
+    context.font = "90px Comic Sans MS";
+    context.fillText(playerOneWins, canvas.width - 1060 , 355);
+    context.fillText(playerTwoWins, canvas.width - 115, 355);
 }
 
 function gameloop() {
@@ -187,8 +207,6 @@ function playerWins(player){
         playerTwoWins += 1;
         lastPlayerWon = 2;
     }
-    // skriv ut vilken reaktionstid
-    // TODO: set timeout för att rita ut nästa runda text
 }
 
 function animateKamehameha(player) {
