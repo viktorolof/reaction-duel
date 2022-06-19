@@ -2,7 +2,7 @@
 var timeToTackle = false;
 var activeTimer = false;
 var intro = false;
-var duelStartTime = 0;
+var promptPopupTime = 0;
 var duelResponseTime = 0;
 var pauseStart = 0;
 
@@ -17,7 +17,8 @@ var playerOneWins = 0;
 var playerTwoWins = 0;
 var lastPlayerWon;
 
-var duel;
+var duel; //reference to duel timer
+var removeFakeoutTimer //reference to timer that removes fakeout prompt
 /*--------------------------------------------------------*/
 
 /*---------------- Function declarations ------------------*/
@@ -54,10 +55,20 @@ function calculatePauseText(x) {
 }
 
 function drawPauseText(str) {
+
     context.font = "50px Comic Sans MS";
     context.fillStyle = "red";
     context.textAlign = "center";
     context.fillText(str, canvas.width/2, canvas.height/2 - 50);
+
+    //Print response time in case of real duel or silly message if someone lost to fakeout
+    if(realDuel){
+        const reactionTime = duelResponseTime - promptPopupTime;
+        context.fillText("Response time " + reactionTime + "ms", canvas.width/2, (canvas.height/2) - 100);
+    }else{
+        context.fillText("Player " + ((lastPlayerWon % 2) + 1) + " needs to chill", canvas.width/2, (canvas.height/2) - 100);
+    }
+    
 }
 
 function drawIntroText(){
@@ -73,7 +84,7 @@ function resetValues(){
     activeTimer = false;
     timeToTackle = false;
     drawFakeOutPrompt = false;
-    duelStartTime = 0;
+    promptPopupTime = 0;
     duelResponseTime = 0;
 }
 
@@ -106,8 +117,9 @@ function gameloop() {
     }else{
         if( Date.now() > pauseStart + pauseTime){
             pauseActive = false; 
+            resetValues();
         }
-        resetValues();
+        
     }
     drawCanvas();
     drawScore();
@@ -140,7 +152,7 @@ function startNewDuelTimer(){
     }
 }
 
-function removeFakeoutPromt(){
+function removeFakeoutPrompt(){
     //Remove the fakeout prompt
     drawFakeOutPrompt = false;
     fakeOut = false;
@@ -188,8 +200,11 @@ function resolvePlayerInput(player){
         duelResponseTime = new Date().getTime();
         if(timeToTackle){
             playerWins(player)
+            timeToTackle = false; //Force prompt to disapprear to free up screen space for end of round text
         } else{
             playerLoses(player)
+            removeFakeoutPrompt();
+            clearTimeout(removeFakeoutTimer); //Remove fakeout promt to free up screen space;
         }
 
         pauseActive = true;
@@ -216,14 +231,14 @@ function listenForKeys(){
 }
 
 function drawDuelPrompt(){
-    duelStartTime = new Date().getTime();
+    promptPopupTime = new Date().getTime();
     timeToTackle = true;
 }
 
 function drawFakeoutPrompt(){
     //Fake prompt, removes itself after a set period of time
     drawFakeOutPrompt = true;
-    setTimeout(removeFakeoutPromt, 3000);
+    removeFakeoutTimer = setTimeout(removeFakeoutPrompt, 3000);
 }
 /*------------- End of function declarations -----------------------*/
 
