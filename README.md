@@ -1,5 +1,5 @@
 ### Reaction Duel
-A simple reaction based game written using JS and HTML Canvas.
+A simple reaction based game written by my friend [@najsolof](https://github.com/najsolof) and I using JS and HTML Canvas.
 
 #### Gameplay
 The players stand by and wait for a prompt to appear on the screen. Depending on the prompt the players have to either be quick to press or keep on standing by. Pressing on the correct prompt will give the player a point, pressing on incorrect prompts will give the opponent a point.
